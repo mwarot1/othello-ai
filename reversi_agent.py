@@ -88,6 +88,9 @@ class ReversiAgent(abc.ABC):
             p.start()
             while p.is_alive():
                 await asyncio.sleep(0.1)
+                self._move = np.array(
+                    [output_move_row.value, output_move_column.value],
+                    dtype=np.int32)
         except asyncio.CancelledError as e:
             print('The previous player is interrupted by a user or a timer.')
         except Exception as e:
@@ -160,14 +163,14 @@ class WarotAgent(ReversiAgent):
     """
     Weight of each position on the board [ref. https://github.com/hylbyj/Alpha-Beta-Pruning-for-Othello-Game/blob/master/readme_alpha_beta.txt]
     """
-    WEIGHTS = [[4, -3, 2, 2, 2, 2, -3, 4],
+    WEIGHTS = [[8, -3, 2, 2, 2, 2, -3, 8],
                [-3, -4, -1, -1, -1, -1, -4, -3],
                [2, -1, 1, 0, 0, 1, -1, 2],
                [2, -1, 0, 1, 1, 0, -1, 2],
                [2, -1, 0, 1, 1, 0, -1, 2],
                [2, -1, 1, 0, 0, 1, -1, 2],
                [-3, -4, -1, -1, -1, -1, -4, -3],
-               [4, -3, 2, 2, 2, 2, -3, 4]]
+               [8, -3, 2, 2, 2, 2, -3, 8]]
 
     def alphabetasearch(self, board, valid_actions, depth_limit=10):
         """Alpha Beta Search Method, return the action"""
@@ -264,6 +267,8 @@ class WarotAgent(ReversiAgent):
         """Set the intended move to self._move."""
         try:
             self.valid_actions = valid_actions
+            output_move_row.value = valid_actions[0][0] #In case the alphabeta search is stupid and return None move
+            output_move_column.value = valid_actions[0][1]
             action = self.alphabetasearch(board, valid_actions, 5)
             if action is not None:
                 output_move_row.value = action[0]
@@ -272,6 +277,7 @@ class WarotAgent(ReversiAgent):
             print(type(e).__name__, ':', e)
             print('search() Traceback (most recent call last): ')
             traceback.print_tb(e.__traceback__)
+
 class AgentMongChaChaVI(ReversiAgent):
     """An agent that evaluates each action using trained weights"""
 

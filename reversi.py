@@ -1,7 +1,7 @@
 """
 This module is a reversi engine for the AI.
 
-Version 3.0
+Version 3.1
 """
 
 import os
@@ -46,6 +46,8 @@ async def main(black, white, timelimit=2):
     env = gym.make('Reversi-v0')
     board, turn = env.reset()
     render(board, turn)
+
+    skip = 0
     # Start the game loop.
     for __ in range(200):
         valids = env.get_valid((board, turn))
@@ -55,8 +57,6 @@ async def main(black, white, timelimit=2):
             active_player = white
         print(f'{_name[turn]}\'s turn')
         if len(valids) == 0:
-            print('NO MOVE! SKIP PLAYER TURN.')
-            await asyncio.sleep(3)
             move = env.PASS
         else:
             start_time = time.time()
@@ -75,6 +75,19 @@ async def main(black, white, timelimit=2):
                 print(f'Timeout! Overtime: {d:.2}')
                 break
             move = active_player.best_move
+            # TODO CHECK SKIP
+            if np.all(move == env.PASS):
+                print('NO MOVE! SKIP PLAYER TURN.')
+                skip += 1
+                await asyncio.sleep(3)
+            elif not env.is_valid((board, turn), move):
+                print(f'MOVE: {move} IS NOT VALID!')
+                skip += 1
+                await asyncio.sleep(3)
+            else:
+                skip = 0
+        if skip >= 2:
+            break
         clear_screen()
         prev_turn = turn
         board, turn = env.get_next_state((board, turn), move)
@@ -89,10 +102,19 @@ async def main(black, white, timelimit=2):
             else:
                 print('DRAW!')
             break
+    if skip == 2:
+        print('BOTH PLAYERS SKIPPED.')
+        black_score = np.sum(board == bg2.BLACK)
+        white_score = np.sum(board == bg2.WHITE)
+        if black_score > white_score:
+            print('BLACK wins!')
+        elif black_score < white_score:
+            print('WHITE wins!')
+        else:
+            print('DRAW!')
 
 
 if __name__ == "__main__":
-    #black = agents.RandomAgent(bg2.BLACK)
     black = agents.WarotAgent(bg2.BLACK)
     white = agents.AgentMongChaChaVI(bg2.WHITE)
     asyncio.run(main(black, white, 10))
